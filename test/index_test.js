@@ -22,6 +22,14 @@ describe("InternetMessage", function() {
       msg.must.have.property("body", "Hi")
     })
 
+    it("must not set body if given undefined", function() {
+      new InternetMessage(null, undefined).must.not.have.property("body")
+    })
+
+    it("must set body if given null", function() {
+      new InternetMessage(null, null).must.have.property("body", null)
+    })
+
     it("must convert header names to lower case", function() {
       var msg = new InternetMessage({"CoNTenT-TyPe": "text/plain"})
       msg.must.have.property("content-type", "text/plain")
@@ -79,15 +87,32 @@ describe("InternetMessage", function() {
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
     })
 
+    it("must parse header and body given only line feed", function() {
+      var msg = InternetMessage.parse("Content-Type: text/plain\n\nHello")
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
+    })
+
     it("must parse header and body given end of line", function() {
       var text = "Content-Type: text/plain\x1e\x1eHello"
       var msg = InternetMessage.parse(text, {eol: "\x1e"})
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
     })
 
+    it("must parse header and body given longer end of line", function() {
+      var text = "Content-Type: text/plain######Hello"
+      var msg = InternetMessage.parse(text, {eol: "###"})
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
+    })
+
     it("must parse header and body given start of body", function() {
       var text = "Content-Type: text/plain\r\n\x02Hello"
       var msg = InternetMessage.parse(text, {sob: "\x02"})
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
+    })
+
+    it("must parse header and body given longer start of body", function() {
+      var text = "Content-Type: text/plain\r\n###Hello"
+      var msg = InternetMessage.parse(text, {sob: "###"})
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
     })
 
@@ -137,14 +162,44 @@ describe("InternetMessage", function() {
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "\r\n"))
     })
 
+    // An empty string has to be valid as the body is optional and there's no
+    // requirement to have any headers either.
     it("must parse given empty string", function() {
       var msg = InternetMessage.parse("")
       msg.must.eql(new InternetMessage)
     })
 
-    it("must parse body given empty headers", function() {
+    it("must parse body given just body", function() {
       var msg = InternetMessage.parse("\r\nHello")
       msg.must.eql(new InternetMessage(null, "Hello"))
+    })
+
+    it("must parse body given just body and line feed", function() {
+      var msg = InternetMessage.parse("\nHello")
+      msg.must.eql(new InternetMessage(null, "Hello"))
+    })
+
+    it("must parse body given just blank body", function() {
+      var msg = InternetMessage.parse("\r\n")
+      msg.must.eql(new InternetMessage(null, ""))
+    })
+
+    it("must parse body given just blank body and line feed", function() {
+      var msg = InternetMessage.parse("\n")
+      msg.must.eql(new InternetMessage(null, ""))
+    })
+
+    it("must throw SyntaxError given a line with no end of line", function() {
+      var err
+      try { InternetMessage.parse("Content-Type: text/plain") }
+      catch (ex) { err = ex }
+      err.must.be.an.instanceof(SyntaxError)
+    })
+
+    it("must throw SyntaxError given a blank line", function() {
+      var err
+      try { InternetMessage.parse(" ") } catch (ex) { err = ex }
+      err.must.be.an.instanceof(SyntaxError)
     })
   })
 

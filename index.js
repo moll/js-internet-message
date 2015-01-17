@@ -1,5 +1,7 @@
+var LF = "\n"
+var CR = "\r"
+var CRLF = CR + LF
 module.exports = InternetMessage
-var EOL = "\r\n"
 
 function InternetMessage(msg, body) {
   if (msg instanceof InternetMessage) msg = msg.toJSON()
@@ -29,16 +31,27 @@ define(InternetMessage.prototype, "toJSON", function() {
 })
 
 InternetMessage.parse = function(msg, opts) {
-  var eol = opts != null && "eol" in opts ? opts.eol : EOL
+  var eol = opts != null && "eol" in opts ? opts.eol : LF
   var sob = opts != null && "sob" in opts ? opts.sob : eol
+  var body = opts != null && "body" in opts ? !!opts.body : true
 
-  if (startsWith(msg, sob))
-    return new InternetMessage(null, msg.slice(sob.length))
+  var headers = []
+  for (var i = 0; i < msg.length; i = eolIndex + eol.length) {
+    if (stringAt(msg, sob, i)) break
+    if (sob == LF && stringAt(msg, CRLF, i)) { ++i; break }
 
-  var pos = msg.indexOf(eol + sob)
-  var headers = parseHeaders(pos != -1 ? msg.slice(0, pos) : msg, eol)
-  var body = pos != -1 ? msg.slice(pos + eol.length + sob.length) : undefined
-  return new InternetMessage(headers, body)
+    var eolIndex = msg.indexOf(eol, i)
+    if (eolIndex == -1) throw new SyntaxError("Invalid Message: No EOL")
+
+    var line = msg.slice(i, eolIndex)
+    if (eol == LF && line[line.length - 1] == CR) line = line.slice(0, -1)
+    headers.push(line)
+  }
+
+  return new InternetMessage(
+    parseHeaders(headers),
+    body && i < msg.length ? msg.slice(i + sob.length) : undefined
+  )
 }
 
 InternetMessage.stringify = function(msg, body, opts) {
@@ -47,7 +60,7 @@ InternetMessage.stringify = function(msg, body, opts) {
   else if (msg != null && body === undefined)
     body = msg.body
 
-  var eol = opts != null && "eol" in opts ? opts.eol : EOL
+  var eol = opts != null && "eol" in opts ? opts.eol : CRLF
   var sob = opts != null && "sob" in opts ? opts.sob : eol
 
   var str = ""
@@ -63,21 +76,16 @@ function define(obj, name, value) {
   })
 }
 
-function parseHeaders(str, eol) {
-  var headers = {}
+function parseHeaders(lines) {
+  if (lines.length == 0) return null
 
-  for (var i = 0, rawHeaders = str.split(eol); i < rawHeaders.length; ++i) {
-    var header = rawHeaders[i]
+  return lines.reduce(function(headers, header) {
     var pos = header.indexOf(":")
     var name = header.slice(0, pos)
     if (name != "") headers[name] = trimLeftSpace(header.slice(pos + 1))
-  }
-
-  return headers
+    return headers
+  }, {})
 }
 
-function startsWith(haystack, needle) {
-  return haystack.slice(0, needle.length) == needle
-}
-
+function stringAt(hay, str, i) { return hay.substr(i, str.length) == str }
 function trimLeftSpace(str) { return str[0] == " " ? str.slice(1) : str }
