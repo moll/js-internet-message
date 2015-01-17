@@ -1,6 +1,5 @@
 module.exports = InternetMessage
-var START_OF_BODY = "\r\n"
-var END_OF_LINE = "\r\n"
+var EOL = "\r\n"
 
 function InternetMessage(msg, body) {
   if (msg instanceof InternetMessage) msg = msg.toJSON()
@@ -30,8 +29,8 @@ define(InternetMessage.prototype, "toJSON", function() {
 })
 
 InternetMessage.parse = function(msg, opts) {
-  var sob = opts != null && "sob" in opts ? opts.sob : START_OF_BODY
-  var eol = opts != null && "eol" in opts ? opts.eol : END_OF_LINE
+  var eol = opts != null && "eol" in opts ? opts.eol : EOL
+  var sob = opts != null && "sob" in opts ? opts.sob : eol
 
   if (startsWith(msg, sob))
     return new InternetMessage(null, msg.slice(sob.length))
@@ -48,8 +47,8 @@ InternetMessage.stringify = function(msg, body, opts) {
   else if (msg != null && body === undefined)
     body = msg.body
 
-  var sob = opts != null && "sob" in opts ? opts.sob : START_OF_BODY
-  var eol = opts != null && "eol" in opts ? opts.eol : END_OF_LINE
+  var eol = opts != null && "eol" in opts ? opts.eol : EOL
+  var sob = opts != null && "sob" in opts ? opts.sob : eol
 
   var str = ""
   for (var name in msg) if (name != "body") str += name + ": " + msg[name] + eol

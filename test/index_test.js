@@ -80,7 +80,7 @@ describe("InternetMessage", function() {
     })
 
     it("must parse header and body given end of line", function() {
-      var text = "Content-Type: text/plain\x1e\r\nHello"
+      var text = "Content-Type: text/plain\x1e\x1eHello"
       var msg = InternetMessage.parse(text, {eol: "\x1e"})
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
     })
@@ -99,7 +99,7 @@ describe("InternetMessage", function() {
     })
 
     it("must parse headers and body given end of line", function() {
-      var str = "Content-Type: text/plain\x1eRange: 100-200\x1e\r\nHello"
+      var str = "Content-Type: text/plain\x1eRange: 100-200\x1e\x1eHello"
       var msg = InternetMessage.parse(str, {eol: "\x1e"})
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       msg.must.eql(new InternetMessage(headers, "Hello"))
@@ -172,7 +172,7 @@ describe("InternetMessage", function() {
     it("must stringify header and body given end of line", function() {
       var headers = {"Content-Type": "text/plain"}
       var str = InternetMessage.stringify(headers, "Hello", {eol: "\x1e"})
-      str.must.equal("Content-Type: text/plain\x1e\r\nHello")
+      str.must.equal("Content-Type: text/plain\x1e\x1eHello")
     })
 
     it("must stringify header and body given start of body", function() {
@@ -190,7 +190,7 @@ describe("InternetMessage", function() {
     it("must stringify headers and body given end of line", function() {
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       var str = InternetMessage.stringify(headers, "Hello", {eol: "\x1e"})
-      str.must.equal("Content-Type: text/plain\x1eRange: 100-200\x1e\r\nHello")
+      str.must.equal("Content-Type: text/plain\x1eRange: 100-200\x1e\x1eHello")
     })
 
     it("must stringify headers and body given start of body", function() {
