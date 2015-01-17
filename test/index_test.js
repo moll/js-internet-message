@@ -49,13 +49,20 @@ describe("InternetMessage", function() {
     it("must stringify header and body", function() {
       var headers = {"Content-Type": "text/plain"}
       var msg = new InternetMessage(headers, "Hello")
-      msg.toString().must.equal("Content-Type: text/plain\n\nHello")
+      msg.toString().must.equal("Content-Type: text/plain\r\n\r\nHello")
+    })
+
+    it("must stringify header and body given options", function() {
+      var headers = {"Content-Type": "text/plain"}
+      var msg = new InternetMessage(headers, "Hello")
+      var str = msg.toString({eol: "\x1e", sob: "\x02"})
+      str.must.equal("Content-Type: text/plain\x1e\x02Hello")
     })
 
     it("must stringify header in given capitalization", function() {
       var headers = {"CoNTenT-TyPe": "text/plain"}
       var msg = new InternetMessage(headers, "Hello")
-      msg.toString().must.equal("CoNTenT-TyPe: text/plain\n\nHello")
+      msg.toString().must.equal("CoNTenT-TyPe: text/plain\r\n\r\nHello")
     })
   })
 
@@ -68,35 +75,61 @@ describe("InternetMessage", function() {
 
   describe(".parse", function() {
     it("must parse header and body", function() {
-      var msg = InternetMessage.parse("Content-Type: text/plain\n\nHello")
+      var msg = InternetMessage.parse("Content-Type: text/plain\r\n\r\nHello")
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
+    })
+
+    it("must parse header and body given end of line", function() {
+      var text = "Content-Type: text/plain\x1e\r\nHello"
+      var msg = InternetMessage.parse(text, {eol: "\x1e"})
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
+    })
+
+    it("must parse header and body given start of body", function() {
+      var text = "Content-Type: text/plain\r\n\x02Hello"
+      var msg = InternetMessage.parse(text, {sob: "\x02"})
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "Hello"))
     })
 
     it("must parse headers and body", function() {
-      var str = "Content-Type: text/plain\nRange: 100-200\n\nHello"
+      var str = "Content-Type: text/plain\r\nRange: 100-200\r\n\r\nHello"
       var msg = InternetMessage.parse(str)
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       msg.must.eql(new InternetMessage(headers, "Hello"))
     })
 
+    it("must parse headers and body given end of line", function() {
+      var str = "Content-Type: text/plain\x1eRange: 100-200\x1e\r\nHello"
+      var msg = InternetMessage.parse(str, {eol: "\x1e"})
+      var headers = {"Content-Type": "text/plain", "Range": "100-200"}
+      msg.must.eql(new InternetMessage(headers, "Hello"))
+    })
+
+    it("must parse headers and body given start of body", function() {
+      var str = "Content-Type: text/plain\r\nRange: 100-200\r\n\x02Hello"
+      var msg = InternetMessage.parse(str, {sob: "\x02"})
+      var headers = {"Content-Type": "text/plain", "Range": "100-200"}
+      msg.must.eql(new InternetMessage(headers, "Hello"))
+    })
+
     it("must parse header without leading space", function() {
-      var msg = InternetMessage.parse("Content-Type:text/plain\n\n")
+      var msg = InternetMessage.parse("Content-Type:text/plain\r\n\r\n")
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, ""))
     })
 
     it("must parse headers with no body", function() {
-      var msg = InternetMessage.parse("Content-Type: text/plain\n")
+      var msg = InternetMessage.parse("Content-Type: text/plain\r\n")
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}))
     })
 
     it("must parse headers with empty body", function() {
-      var msg = InternetMessage.parse("Content-Type: text/plain\n\n")
+      var msg = InternetMessage.parse("Content-Type: text/plain\r\n\r\n")
       msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, ""))
     })
 
     it("must parse headers with blank lined body", function() {
-      var msg = InternetMessage.parse("Content-Type: text/plain\n\n\n")
-      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "\n"))
+      var msg = InternetMessage.parse("Content-Type: text/plain\r\n\r\n\r\n")
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, "\r\n"))
     })
 
     it("must parse given empty string", function() {
@@ -105,7 +138,7 @@ describe("InternetMessage", function() {
     })
 
     it("must parse body given empty headers", function() {
-      var msg = InternetMessage.parse("\nHello")
+      var msg = InternetMessage.parse("\r\nHello")
       msg.must.eql(new InternetMessage(null, "Hello"))
     })
   })
@@ -114,48 +147,79 @@ describe("InternetMessage", function() {
     it("must stringify InternetMessage", function() {
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       var msg = new InternetMessage(headers, "Hello")
-      var str = InternetMessage.stringify(msg, "Hello")
-      str.must.equal("Content-Type: text/plain\nRange: 100-200\n\nHello")
+      var str = InternetMessage.stringify(msg)
+      str.must.equal("Content-Type: text/plain\r\nRange: 100-200\r\n\r\nHello")
+    })
+
+    it("must stringify InternetMessage given options", function() {
+      var headers = {"Content-Type": "text/plain", "Range": "100-200"}
+      var msg = new InternetMessage(headers, "Hello")
+      var str = InternetMessage.stringify(msg, {eol: "\x1e", sob: "\x02"})
+      str.must.equal("Content-Type: text/plain\x1eRange: 100-200\x1e\x02Hello")
     })
 
     it("must stringify header and body", function() {
       var headers = {"Content-Type": "text/plain"}
       var str = InternetMessage.stringify(headers, "Hello")
-      str.must.equal("Content-Type: text/plain\n\nHello")
+      str.must.equal("Content-Type: text/plain\r\n\r\nHello")
+    })
+
+    it("must stringify header and body given end of line", function() {
+      var headers = {"Content-Type": "text/plain"}
+      var str = InternetMessage.stringify(headers, "Hello", {eol: "\x1e"})
+      str.must.equal("Content-Type: text/plain\x1e\r\nHello")
+    })
+
+    it("must stringify header and body given start of body", function() {
+      var headers = {"Content-Type": "text/plain"}
+      var str = InternetMessage.stringify(headers, "Hello", {sob: "\x02"})
+      str.must.equal("Content-Type: text/plain\r\n\x02Hello")
     })
 
     it("must stringify headers and body", function() {
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       var str = InternetMessage.stringify(headers, "Hello")
-      str.must.equal("Content-Type: text/plain\nRange: 100-200\n\nHello")
+      str.must.equal("Content-Type: text/plain\r\nRange: 100-200\r\n\r\nHello")
+    })
+
+    it("must stringify headers and body given end of line", function() {
+      var headers = {"Content-Type": "text/plain", "Range": "100-200"}
+      var str = InternetMessage.stringify(headers, "Hello", {eol: "\x1e"})
+      str.must.equal("Content-Type: text/plain\x1eRange: 100-200\x1e\r\nHello")
+    })
+
+    it("must stringify headers and body given start of body", function() {
+      var headers = {"Content-Type": "text/plain", "Range": "100-200"}
+      var str = InternetMessage.stringify(headers, "Hello", {sob: "\x02"})
+      str.must.equal("Content-Type: text/plain\r\nRange: 100-200\r\n\x02Hello")
     })
 
     it("must stringify body given empty headers", function() {
-      InternetMessage.stringify({}, "Hello").must.equal("\nHello")
+      InternetMessage.stringify({}, "Hello").must.equal("\r\nHello")
     })
 
     it("must stringify headers and empty body if given undefined", function() {
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       var str = InternetMessage.stringify(headers, undefined)
-      str.must.equal("Content-Type: text/plain\nRange: 100-200\n")
+      str.must.equal("Content-Type: text/plain\r\nRange: 100-200\r\n")
     })
 
     it("must stringify headers and empty body if given null", function() {
       var headers = {"Content-Type": "text/plain", "Range": "100-200"}
       var str = InternetMessage.stringify(headers, null)
-      str.must.equal("Content-Type: text/plain\nRange: 100-200\n")
+      str.must.equal("Content-Type: text/plain\r\nRange: 100-200\r\n")
     })
 
     it("must stringify body given undefined headers", function() {
-      InternetMessage.stringify(undefined, "Hello").must.equal("\nHello")
+      InternetMessage.stringify(undefined, "Hello").must.equal("\r\nHello")
     })
 
     it("must stringify body given null headers", function() {
-      InternetMessage.stringify(null, "Hello").must.equal("\nHello")
+      InternetMessage.stringify(null, "Hello").must.equal("\r\nHello")
     })
 
     it("must stringify empty if both undefined", function() {
-      InternetMessage.stringify(null, undefined).must.equal("")
+      InternetMessage.stringify(undefined, undefined).must.equal("")
     })
 
     it("must stringify empty if both null", function() {

@@ -1,4 +1,6 @@
 module.exports = InternetMessage
+var START_OF_BODY = "\r\n"
+var END_OF_LINE = "\r\n"
 
 function InternetMessage(msg, body) {
   if (msg instanceof InternetMessage) msg = msg.toJSON()
@@ -11,8 +13,8 @@ function InternetMessage(msg, body) {
   if (body !== undefined) this.body = body
 }
 
-define(InternetMessage.prototype, "toString", function() {
-  return this.constructor.stringify(this)
+define(InternetMessage.prototype, "toString", function(opts) {
+  return this.constructor.stringify(this, opts)
 })
 
 define(InternetMessage.prototype, "toJSON", function() {
@@ -27,20 +29,31 @@ define(InternetMessage.prototype, "toJSON", function() {
   return obj
 })
 
-InternetMessage.parse = function(msg) {
-  if (msg[0] == "\n") return new InternetMessage(null, msg.slice(1))
-  var pos = msg.indexOf("\n\n")
-  if (pos == -1) return new InternetMessage(parseHeaders(msg.slice(0, pos)))
-  return new InternetMessage(parseHeaders(msg.slice(0, pos)), msg.slice(pos+2))
+InternetMessage.parse = function(msg, opts) {
+  var sob = opts != null && "sob" in opts ? opts.sob : START_OF_BODY
+  var eol = opts != null && "eol" in opts ? opts.eol : END_OF_LINE
+
+  if (startsWith(msg, sob))
+    return new InternetMessage(null, msg.slice(sob.length))
+
+  var pos = msg.indexOf(eol + sob)
+  var headers = parseHeaders(pos != -1 ? msg.slice(0, pos) : msg, eol)
+  var body = pos != -1 ? msg.slice(pos + eol.length + sob.length) : undefined
+  return new InternetMessage(headers, body)
 }
 
-InternetMessage.stringify = function(msg, body) {
-  if (msg instanceof InternetMessage) msg = msg.toJSON()
-  if (msg && body === undefined) body = msg.body
+InternetMessage.stringify = function(msg, body, opts) {
+  if (msg instanceof InternetMessage)
+    msg = msg.toJSON(), opts = body, body = msg.body
+  else if (msg != null && body === undefined)
+    body = msg.body
+
+  var sob = opts != null && "sob" in opts ? opts.sob : START_OF_BODY
+  var eol = opts != null && "eol" in opts ? opts.eol : END_OF_LINE
 
   var str = ""
-  for (var name in msg) if (name != "body") str += name + ": " + msg[name] +"\n"
-  if (body != null) str += "\n" + body
+  for (var name in msg) if (name != "body") str += name + ": " + msg[name] + eol
+  if (body != null) str += sob + body
 
   return str
 }
@@ -51,10 +64,10 @@ function define(obj, name, value) {
   })
 }
 
-function parseHeaders(str) {
+function parseHeaders(str, eol) {
   var headers = {}
 
-  for (var i = 0, rawHeaders = str.split("\n"); i < rawHeaders.length; ++i) {
+  for (var i = 0, rawHeaders = str.split(eol); i < rawHeaders.length; ++i) {
     var header = rawHeaders[i]
     var pos = header.indexOf(":")
     var name = header.slice(0, pos)
@@ -62,6 +75,10 @@ function parseHeaders(str) {
   }
 
   return headers
+}
+
+function startsWith(haystack, needle) {
+  return haystack.slice(0, needle.length) == needle
 }
 
 function trimLeftSpace(str) { return str[0] == " " ? str.slice(1) : str }
