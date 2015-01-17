@@ -1,11 +1,17 @@
 {
 	"name": "internet-message",
 	"version": "0.0.0",
-	"description": "",
+	"description": "Parse and stringify RFC 822 ARPA Internet Text Messages. Useful format for messages with headers and body. Similar to HTTP.",
 	"keywords": [
 		"imf",
+		"rfc733",
 		"rfc822",
-		"rfc2822"
+		"rfc2822",
+		"rfc2045",
+		"rfc2046",
+		"rfc2047",
+		"rfc2048",
+		"rfc2049"
 	],
 	"homepage": "https://github.com/moll/js-internet-message",
 	"bugs": "https://github.com/moll/js-internet-message/issues",

@@ -1,5 +1,6 @@
 NODE_OPTS =
 TEST_OPTS =
+GITHUB_URL = https://github.com/moll/js-internet-message
 
 love:
 	@echo "Feel like makin' love."
@@ -25,11 +26,35 @@ publish:
 tag:
 	git tag "v$$(node -e 'console.log(require("./package").version)')"
 
+# NOTE: Sorry, mocumentation is not yet published.
+doc: doc.json
+	@mkdir -p doc
+	@~/Documents/Mocumentation/bin/mocument \
+		--type yui \
+		--title InternetMessage.js \
+		tmp/doc/data.json > doc/API.md
+
+toc: doc.json
+	@~/Documents/Mocumentation/bin/mocument \
+		--type yui \
+		--template toc \
+		--include InternetMessage \
+		--var api_url=$(GITHUB_URL)/blob/master/doc/API.md \
+		tmp/doc/data.json > tmp/TOC.md
+
+	echo "/^### \[InternetMessage\]/,/^\$$/{/^#/r tmp/TOC.md\n/^\$$/!d;}" |\
+		sed -i "" -f /dev/stdin README.md
+
+doc.json:
+	@mkdir -p tmp
+	@yuidoc --exclude test,node_modules --parse-only --outdir tmp/doc .
+
 clean:
-	rm -f *.tgz
+	rm -f *.tgz tmp
 	npm prune --production
 
 .PHONY: love
 .PHONY: test spec autotest autospec
 .PHONY: pack publish tag
 .PHONY: clean
+.PHONY: doc toc doc.json
