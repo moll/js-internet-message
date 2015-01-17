@@ -113,8 +113,13 @@ describe("InternetMessage", function() {
     })
 
     it("must parse header without leading space", function() {
-      var msg = InternetMessage.parse("Content-Type:text/plain\r\n\r\n")
-      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}, ""))
+      var msg = InternetMessage.parse("Content-Type:text/plain\r\n")
+      msg.must.eql(new InternetMessage({"Content-Type": "text/plain"}))
+    })
+
+    it("must parse header with multiple colons", function() {
+      var msg = InternetMessage.parse("Ratio: 1:2\r\n")
+      msg.must.eql(new InternetMessage({"Ratio": "1:2"}))
     })
 
     it("must parse headers with no body", function() {
