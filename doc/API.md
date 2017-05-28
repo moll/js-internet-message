@@ -3,14 +3,13 @@ InternetMessage.js API Documentation
 ### [InternetMessage](#InternetMessage)
 - [_header_](#internetMessage._header_)
 - [body](#internetMessage.body)
-- [parse](#InternetMessage.parse)(message, [options])
-- [stringify](#InternetMessage.stringify)(message, [body], [options])
-- [toJSON](#InternetMessage.prototype.toJSON)()
-- [toString](#InternetMessage.prototype.toString)([options])
+- [.prototype.toJSON](#InternetMessage.prototype.toJSON)()
+- [.prototype.toString](#InternetMessage.prototype.toString)([options])
+- [.parse](#InternetMessage.parse)(message, [options])
+- [.stringify](#InternetMessage.stringify)(message, [body], [options])
 
 
-<a name="InternetMessage" />
-InternetMessage(headers, [body])
+InternetMessage(headers, [body]) <a name="InternetMessage"></a>
 --------------------------------
 Create an instance of `InternetMessage`.
 
@@ -26,14 +25,12 @@ For a message with no body, don't pass one or set it to `null` or
 [`InternetMessage`]: #InternetMessage
 [`InternetMessage.stringify`]: #InternetMessage.stringify
 
-<a name="internetMessage._header_" />
-### internetMessage._header_
+### internetMessage._header_ <a name="internetMessage._header_"></a>
 Set to the header value.  
 Headers are always lower-cased, but their original capitalization is
 retained internally for later stringifying.
 
-<a name="internetMessage.body" />
-### internetMessage.body
+### internetMessage.body <a name="internetMessage.body"></a>
 Set to the body of the message.
 
 If the message had no body (didn't contain any start-of-body character),
@@ -47,8 +44,21 @@ Content-Type: text/plain
 
 ```
 
-<a name="InternetMessage.parse" />
-### InternetMessage.parse(message, [options])
+### InternetMessage.prototype.toJSON() <a name="InternetMessage.prototype.toJSON"></a>
+Returns a plain object of headers and `body`.  
+Headers will be in their original capitalization.
+
+### InternetMessage.prototype.toString([options]) <a name="InternetMessage.prototype.toString"></a>
+Calls [`InternetMessage.stringify`][] with itself, forwarding any options
+given to it.
+
+**Examples**:
+```javascript
+var msg = new InternetMessage({"Content-Type": "text/plain"}, "Hello")
+msg.toString({eol: "\n")
+```
+
+### InternetMessage.parse(message, [options]) <a name="InternetMessage.parse"></a>
 Parse a string following [RFC 733][rfc733], [RFC 822][rfc822] or
 [RFC 2822][rfc2822] to an instance of [`InternetMessage`][].  
 One exception though: It doesn't yet support wrapped or folded header
@@ -67,8 +77,7 @@ Name | Value
 eol  | String at the end of header lines.<br>Defaults to `\n` with an optional preceding `\r`.
 sob  | String at the end of all headers to signal the start of body.<br>If not given, same as `eol`.
 
-<a name="InternetMessage.stringify" />
-### InternetMessage.stringify(message, [body], [options])
+### InternetMessage.stringify(message, [body], [options]) <a name="InternetMessage.stringify"></a>
 Returns a string following [RFC 733][rfc733], [RFC 822][rfc822] and
 [RFC 2822][rfc2822].  
 One exception though: It doesn't wrap long header lines as suggested by
@@ -91,20 +100,4 @@ var opts = {eol: "\n"}
 
 InternetMessage.stringify(msg, opts)
 InternetMessage.stringify({"Content-Type": "text/plain"}, "Hello", opts)
-```
-
-<a name="InternetMessage.prototype.toJSON" />
-### InternetMessage.prototype.toJSON()
-Returns a plain object of headers and `body`.  
-Headers will be in their original capitalization.
-
-<a name="InternetMessage.prototype.toString" />
-### InternetMessage.prototype.toString([options])
-Calls [`InternetMessage.stringify`][] with itself, forwarding any options
-given to it.
-
-**Examples**:
-```javascript
-var msg = new InternetMessage({"Content-Type": "text/plain"}, "Hello")
-msg.toString({eol: "\n")
 ```
